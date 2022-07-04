@@ -1,8 +1,12 @@
+from cmath import inf
 from collections import defaultdict
 import math
 
 
 def optimize_coefficient(number: int, modulo: int) -> int:
+    """
+    Function increases or reduces  factors with modulo parameter to obtain positive number close to 0 
+    """
     if number < 0:
         number = number + math.ceil(abs(number)/modulo)*modulo
     elif number - modulo > 0:
@@ -11,13 +15,12 @@ def optimize_coefficient(number: int, modulo: int) -> int:
     return number
 
 
-def is_relative_prime(num1: int, num2: int) -> bool:
-    com_div = common_divisors(num1, num2)
-    return True if len(com_div) > 0 else False
-
-
-def factorization(num: int) -> dict:  # { number: count, ...}
-    factors: dict = defaultdict(int)  # default value of item is 0
+def factorization(num: int) -> dict:  #  { number: number of occurences, ...  }
+    """
+    Returns factors of input number 
+    """
+    factors: dict = defaultdict(
+        int)  # Default dict to simpler calculation
     while num != 1:
         for i in range(2, int(num)+1):
             if num % i == 0:
@@ -29,24 +32,55 @@ def factorization(num: int) -> dict:  # { number: count, ...}
     return factors
 
 
-def common_divisors(num1: int, num2: int) -> list:
-    a_factors = factorization(abs(num1))
-    b_factors = factorization(abs(num2))
-    return [i for i in a_factors.keys() if i in b_factors.keys()]
+def common_divisors(numbers: list) -> list:
+    """
+    Returns list of common divisors 
+    """
+    f_array = []
+    common = []
+
+    for i in numbers:  # List of decompositions into factors 
+        if i == 0:
+            return []
+        f_array.append(factorization(abs(i)))
+
+    for i in f_array[0]:
+        # Adding element if  number is located in every sublist of factors 
+        if all(i in f_array[j] for j in range(len(f_array))):
+            common.append(i)
+
+    return common
 
 
-def greatest_common_divisor(num1: int, num2: int) -> int:
-    lcm = least_common_multiple(num1, num2)
-    gcd = (num1*num2)/lcm
-    return int(gcd)
+def is_relative_prime(num1: int, num2: int) -> bool:
+    """
+    Test if pair of numbers contains relative primes numbers
+    """
+    com_div = common_divisors([num1, num2])
+    return True if len(com_div) > 0 else False
+
+
+def check_relative_primes(a: int, b: int, c: int, d: int, n: int):
+    # Error if any pair of numbers is relative prime to modulo factor
+    relative_primes = map(lambda x: is_relative_prime(x, n), [a, b, c, d])
+    if any(relative_primes):
+        print("There is number that is not relative prime to modulo factor")
+        print()
+        quit()
 
 
 def least_common_multiple(num1: int, num2: int) -> int:
+    """
+    Returns lowest common multiple on the base of decomposition to factors 
+    """
+    if num1 == 0 or num2 == 0:
+        return inf
+
     a_factors = factorization(abs(num1))
     b_factors = factorization(abs(num2))
 
     factors_merge = [i for i in b_factors.keys(
-    ) if i not in a_factors.keys()] + list(a_factors.keys())
+    ) if i not in a_factors.keys()] + list(a_factors.keys())  # Sum of list containing every occuring divisors 
 
     lcm = 1
     for num in factors_merge:
@@ -54,11 +88,31 @@ def least_common_multiple(num1: int, num2: int) -> int:
     return lcm
 
 
-def reduce_one_coefficient(num1: int, num2: int, a: int, b: int, c: int, d: int, e: int, f: int, n: int,  lcm: int) -> tuple:
+def greatest_common_divisor(num1: int, num2: int) -> int:
+    """
+    Returning greatest common divisor  gcd = (num1*num2)/lcm
+    """
+    lcm = least_common_multiple(num1, num2)
+    gcd = (num1*num2)/lcm
+    return int(gcd)
+
+
+def reduce_one_coefficient(a: int, b: int, c: int, d: int, e: int, f: int, n: int,  lcm: int, var: str) -> tuple:
+    """
+    Reducing one coefficient to simplify equation
+    Returns factor on the left side of equation and value on its right side
+    """
+    if var == "x":
+        num1 = a
+        num2 = c
+    else:
+        num1 = b
+        num2 = d
+
     quotient1 = abs(int(lcm/num1))
     quotient2 = abs(int(lcm/num2))
 
-    # if both numbers have same sign *-1 to reduce them
+    # If both numbers have the same sign multiply to reduce -1 
     if (num1 > 0 and num2 > 0) or (num1 < 0 and num2 < 0):
         a *= -1
         b *= -1
@@ -72,60 +126,94 @@ def reduce_one_coefficient(num1: int, num2: int, a: int, b: int, c: int, d: int,
     d *= quotient2
     f *= quotient2
 
-    # (y or x) * coefficient variable depending of conditional statement
-    variable = a+b+c+d
-    number = e+f  # sum of numbers after equal sign in equation
+    left_s = a+b+c+d  #sum of number on the left side of equation a and c or b and d are going to be reduce 
+    right_s = e+f  # sum of numbers on the right side of equation 
+
     print(
-        f"Adding first equation multiplied by {quotient1} and second by {quotient2}")
+        f"Adding first equation multiplied by {quotient1} and the second one by {quotient2}")
     print("----------------------------------------------------------")
+    print("Transformed equation", "\n")
     print(f"{a}x + {b}y ≡{n} {e} ")
     print(f"{c}x + {d}y ≡{n} {f} ")
     print()
-    return variable, number
+    return left_s, right_s
 
 
 def possible_solutions(num1: int, num2: int, modulo: int):
+    """
+    Return number of possible solutions of congruence 
+    Equation have solution if gdc(num1, modulo)
+    """
     p_solutions = greatest_common_divisor(num1, modulo)
+
     if (num2 % p_solutions) != 0:
         print("----------------------------------------------------------")
-        print("No Solutions")
+        print("No solutions")
         quit()
     else:
-        print(f"Solutions: {p_solutions}")
+        print(f"Number of solutions: {p_solutions}")
         print("----------------------------------------------------------")
         print()
 
 
-def solve_congruence(num1: int, num2: int, modulo: int) -> int:
+def solve_congruence(num1: int, num2: int, modulo: int, constant=None) -> int:
+    """
+    Return congruence result
+    """
+
     num1 = optimize_coefficient(num1, modulo)
     num2 = optimize_coefficient(num2, modulo)
 
-    possible_solutions(num1, num2, modulo)
+    if not constant:  # if without constant 
+        possible_solutions(num1, num2, modulo)
 
-    while num1 != 1 and num2 != 0:
-        cd = common_divisors(num1, num2)
+        # While loop to the moment of achievement of 1*variable on the left side of equation or 0 on the rifht side 
+        while num1 != 1 and num2 != 0:
+            cd = common_divisors([num1, num2])
 
-        if len(cd) == 0:
-            num2 += modulo
-            continue
+            # If lacking common divisors we are adding modulo to number on the right side 
+            if len(cd) == 0:
+                num2 += modulo
+                continue
 
-        max_cd = max(cd)
-        num1 = int(num1/max_cd)
-        num2 = int(num2/max_cd)
-    return num2
+            # Splitting two numbers by their highest common divisor
+            max_cd = max(cd)
+            num1 = int(num1/max_cd)
+            num2 = int(num2/max_cd)
+        return num2
+
+    if constant:
+        constant = constant * -1  # *-1 because we are swapping on the right side of equation 
+        flag = 0  # to alternate addition of modulo to constant and number on the right side 
+        constant = optimize_coefficient(constant, modulo)
+        while num1 != 1 and (num2 != 0 and constant != 0):
+            cd = common_divisors([num1, num2, constant])
+
+            # If lacking common divisors we are adding modulo to factor next to constant or value on the right side 
+            if len(cd) == 0:
+
+                if flag == 0:
+                    num2 += modulo
+                    flag += 1
+                    continue
+
+                if flag == 1:
+                    constant += modulo
+                    flag -= 1
+                    continue
+
+            # Splitting two numbers by their highest common divisor
+            max_cd = max(cd)
+            num1 = int(num1/max_cd)
+            num2 = int(num2/max_cd)
+            constant = int(constant/max_cd)
+        return optimize_coefficient(num2, modulo), optimize_coefficient(constant, modulo)
 
 
 def solve(a: int, b: int, c: int, d: int, e: int, f: int, n: int) -> tuple:
 
-    # Error if any number is not relative prime number
-    relative_primes = map(lambda x: is_relative_prime(x, n), [a, b, c, d])
-    if any(relative_primes):
-        print("There is none relative prime number")
-        print(list(relative_primes))
-        print("")
-        quit()
-
-    # Optimising coefficients to remove negative numbers
+    check_relative_primes(a, b, c, d, n)
+    # Coefficients optimalization
     a = optimize_coefficient(a, n)
     b = optimize_coefficient(b, n)
     c = optimize_coefficient(c, n)
@@ -133,43 +221,86 @@ def solve(a: int, b: int, c: int, d: int, e: int, f: int, n: int) -> tuple:
     e = optimize_coefficient(e, n)
     f = optimize_coefficient(f, n)
 
-    print("Optimized coefficients")
+    print("Optimal coefficients")
     print("----------------------------------------------------------")
     print(f"{a}x + {b}y ≡{n} {e} ")
     print(f"{c}x + {d}y ≡{n} {f} ")
     print()
-    x_lcm = least_common_multiple(a, c)
-    y_lcm = least_common_multiple(b, e)
 
-    if x_lcm < y_lcm:
-        print("Reducing variable x")
-        variable, number = reduce_one_coefficient(
-            a, c, a, b, c, d, e, f, n, x_lcm)
+    not_zero = [i for i in [a, b, c, d, e, f] if i != 0]
+    if len(not_zero) == 2:
+        value = solve_congruence(not_zero[0], not_zero[1], n)
+        print("Result")
+        print("=====================")
+        print(f"x ≡{n} {value}")
+        print("=====================", '\n')
+        quit()
 
-        y_value = solve_congruence(variable, number, n)
+    # Case one equation with two unknowns
+    if (a == 0 and b == 0) or (c == 0 and d == 0):
+        if a == 0 and b == 0:  # jeżeli brak wartości ax + by podstawiamy c i d pod b w celu wykonania obliczeń wyłącznie na pierwszym równaniu
+            a, b = c, d
+        # a is factor next to constant because we operate on single equation
+        value = solve_congruence(b, e, n, a)
+        print("Result")
+        print("=====================")
+        print(f"x ≡{n} c")
+        print(f"y ≡{n} {value[1]}c + {value[0]}")
+        print("=====================", '\n')
+        quit()
 
-        print("Simplified equations")
-        print("----------------------------------------------------------")
-        print(f"{variable}x ≡{n} {number}")
-        print(f"{a*y_value+b}y ≡{n} {e}", 2*"\n")
-        # Substituting y value in  {𝑎𝑥 + 𝑏𝑦 ≡𝑛 e
-        x_value = solve_congruence(a, e-b*y_value, n)
+    # Case, two equations where every contains only one unknown
+    if (a == 0 and d == 0) or (c == 0 and b == 0):
+        if a == 0 and d == 0:
+            y_coef, y_right_side = b, e
+            x_coef, x_right_side = c, f
+        elif b == 0 and c == 0:
+            x_coef, x_right_side = a, e
+            y_coef, y_right_side = d, f
+            c = a
 
+        print("X - ", end="")
+        x_value = solve_congruence(x_coef, x_right_side, n)
+        print("Y - ", end="")
+        # x value substitution
+        y_value = solve_congruence(y_coef, y_right_side, n)
+
+    # Case, two equations two unknows
     else:
-        print("Reducing variable y")
-        variable, number = reduce_one_coefficient(
-            b, d, a, b, c, d, e, f, n, y_lcm)
+        # Lowest common multiple for both variables
+        x_lcm = (least_common_multiple(a, c), "x")
+        y_lcm = (least_common_multiple(b, d), "y")
 
-        x_value = solve_congruence(variable, number, n)
+        lcm, variable = min(x_lcm, y_lcm, key=lambda x: x[0])
 
-        print("Simplified equations")
-        print("----------------------------------------------------------")
-        print(f"{variable}x ≡{n} {number}")
-        print(f"{a*x_value+b}y ≡{n} {e}", 2*"\n")
-        # Substituting x value in  {𝑎𝑥 + 𝑏𝑦 ≡𝑛 e
-        y_value = solve_congruence(b, e - a*x_value, n)
+        print(f"Variable reduction {variable}")
+        left_side, right_side = reduce_one_coefficient(
+            a, b, c, d, e, f, n, lcm, variable)
 
-    print()
+        # If equations reduces itself we are adding constant to equation
+        if left_side == 0:
+            value = solve_congruence(b, e, n, a)
+            print("Result")
+            print("=====================")
+            print(f"x ≡{n} c")
+            print(f"y ≡{n} {value[1]}c + {value[0]}")
+            print("=====================", '\n')
+            quit()
+
+        if variable == "y":
+            print("X - ", end="")
+            x_value = solve_congruence(left_side, right_side, n)
+            # Value substitution x under {𝑎𝑥 + 𝑏𝑦 ≡𝑛 c
+            print("Y - ", end="")
+            y_value = solve_congruence(b, e - a*x_value, n)
+
+        if variable == "x":
+            print("Y - ", end="")
+            y_value = solve_congruence(left_side, right_side, n)
+            # Value substitution y under {𝑎𝑥 + 𝑏𝑦 ≡𝑛 c
+            print("X - ", end="")
+            x_value = solve_congruence(a, e-b*y_value, n,)
+
     print("Result")
     print("=====================")
     print(f"x ≡{n} {x_value}")
@@ -179,9 +310,9 @@ def solve(a: int, b: int, c: int, d: int, e: int, f: int, n: int) -> tuple:
 
 def main(a, b, c, d, e, f, n):
     """
-        Equation Template:
-        {𝑎𝑥 + 𝑏𝑦 ≡𝑛 e
-        {c𝑥 + d𝑦 ≡𝑛 𝑓
+        Equation type:
+        {𝑎𝑥 + 𝑏𝑦 ≡𝑛 c
+        {d𝑥 + e𝑦 ≡𝑛 𝑓
 
     """
     print("Equation")
@@ -189,12 +320,12 @@ def main(a, b, c, d, e, f, n):
     print(f"{a}x + {b}y ≡{n} {e} ")
     print(f"{c}x + {d}y ≡{n} {f} ")
     print()
-
     solve(a, b, c, d, e, f, n)
 
 
 if __name__ == "__main__":
-
-    #main(a, b, c, d, e, f, n)
-    #Example  function values 
-    main(5, -2, -2, 4, 4, -3, 11)  # a=5, b=(-2)...
+    # main(a, b, c, d, e, f, n)
+    # Example equation:
+    #{ 4x + -7y ≡37 19 
+    #{ 1x + 8y ≡37 18 
+    main(4,-7,19,1,8,18,37)
